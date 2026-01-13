@@ -1,0 +1,16 @@
+{
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Prisma DB Push",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "db:push"
+            ],
+            "cwd": "${workspaceFolder}",
+            "internalConsoleOptions": "neverOpen"
+        }
+    ]
+}

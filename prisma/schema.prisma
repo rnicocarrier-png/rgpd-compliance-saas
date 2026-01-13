@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Utilisateurs
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  role      UserRole @default(ADMIN)
+  
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([clerkId])
+}
+
+enum UserRole {
+  ADMIN
+  MEMBER
+  DPO
+}
+
+// Entreprises
+model Company {
+  id                 String              @id @default(cuid())
+  name               String
+  siret              String?             @unique
+  industry           Industry?
+  employeeCount      Int?
+  
+  subscriptionStatus SubscriptionStatus  @default(TRIAL)
+  plan               Plan                @default(STARTER)
+  trialEndsAt        DateTime?
+  
+  users              User[]
+  registries         Registry[]
+  audits             Audit[]
+  rightsRequests     RightsRequest[]
+  
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+}
+
+enum Industry {
+  ECOMMERCE
+  SAAS
+  HEALTH
+  HR
+  MARKETING
+  OTHER
+}
+
+enum Plan {
+  STARTER
+  BUSINESS
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
+// Registres RGPD
+model Registry {
+  id               String   @id @default(cuid())
+  
+  companyId        String
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  dataTypes        Json
+  purposes         String   @db.Text
+  legalBasis       String
+  recipients       String   @db.Text
+  retentionPeriods String
+  securityMeasures Json
+  
+  completionRate   Int      @default(0)
+  pdfUrl           String?
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+// Audits de conformité
+model Audit {
+  id           String   @id @default(cuid())
+  
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  score        Int
+  checksPassed Int
+  checksTotal  Int      @default(25)
+  results      Json
+  
+  reportPdfUrl String?
+  
+  createdAt    DateTime @default(now())
+
+  @@index([companyId])
+}
+
+// Demandes de droits
+model RightsRequest {
+  id              String        @id @default(cuid())
+  
+  companyId       String
+  company         Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  requesterEmail  String
+  requesterName   String?
+  requestType     RequestType
+  message         String?       @db.Text
+  
+  status          RequestStatus @default(PENDING)
+  processedBy     String?
+  processedAt     DateTime?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([companyId])
+}
+
+enum RequestType {
+  ACCESS
+  RECTIFICATION
+  DELETION
+  PORTABILITY
+  OPPOSITION
+}
+
+enum RequestStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+}
